@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # AI Agent for Minecraft
 
 Minecraft 1.21.11 / Fabric 内置 AI 智能体模组，自带**独立窗口**。可以把 AI 接入任意 **OpenAI 兼容** API（OpenAI、DeepSeek、Ollama、vLLM、SiliconFlow、通义/智谱兼容端点等），让它在游戏里和你对话，并**真实控制角色**：移动、跳跃、攻击、放置方块、使用物品、切换物品栏、发聊天消息，同时读取你的位置、血量、背包和周围环境。
@@ -96,3 +97,7 @@ build.ps1                 一键手动构建脚本
 - 1.21.11 的输入系统已重构为 `KeyEvent`/`MouseButtonEvent` 记录，GUI 已适配
 - 智能体动作通过客户端 tick 队列在渲染线程执行，LLM 请求在工作线程执行，线程安全
 - 目前为**非流式**响应（更稳定）；后续版本可加流式与更多版本支持
+=======
+# Ai-Agent-For-Minecraft
+This is an AI agent for the Minecraft, you can use the AI agent in playing!
+>>>>>>> d6f5158fb0409fb7779a466a16575ec1e269e0bb
