@@ -72,12 +72,23 @@ public final class ComputerTools {
 		try {
 			Process p = pb.start();
 			Instant start = Instant.now();
+			java.util.concurrent.FutureTask<String> reader = new java.util.concurrent.FutureTask<>(
+					() -> readAll(p.getInputStream()));
+			Thread rt = new Thread(reader, "mcai-cmd-reader");
+			rt.setDaemon(true);
+			rt.start();
 			boolean finished = p.waitFor(30, TimeUnit.SECONDS);
+			String output;
+			try {
+				output = reader.get(finished ? 5 : 1, TimeUnit.SECONDS);
+			} catch (Exception e) {
+				output = "";
+			}
 			if (!finished) {
 				p.destroyForcibly();
 				return "{\"ok\":false,\"error\":\"命令执行超时(30秒)，已强制终止\"}";
 			}
-			String output = readAll(p.getInputStream());			long ms = Duration.between(start, Instant.now()).toMillis();
+			long ms = Duration.between(start, Instant.now()).toMillis();
 			return "{\"ok\":true,\"exit\":\"" + p.exitValue() + "\",\"ms\":\"" + ms + "\",\"output\":\""
 					+ jsonEscape(truncate(output, MAX_OUTPUT)) + "\"}";
 		} catch (IOException e) {
@@ -235,9 +246,14 @@ public final class ComputerTools {
 		if (target == null || !Files.isDirectory(target)) {
 			return "{\"ok\":false,\"error\":\"目录不存在: " + jsonEscape(path) + "\"}";
 		}
+		java.nio.file.PathMatcher matcher;
 		try {
-			java.nio.file.PathMatcher matcher = java.nio.file.FileSystems.getDefault()
+			matcher = java.nio.file.FileSystems.getDefault()
 					.getPathMatcher("glob:" + (pattern == null || pattern.isEmpty() ? "**" : pattern));
+		} catch (IllegalArgumentException e) {
+			return "{\"ok\":false,\"error\":\"无效的 glob 模式: " + jsonEscape(e.getMessage()) + "\"}";
+		}
+		try {
 			StringBuilder sb = new StringBuilder();
 			int count = 0;
 			try (java.util.stream.Stream<Path> walk = Files.walk(target, 12)) {

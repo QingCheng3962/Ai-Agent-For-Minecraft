@@ -26,7 +26,6 @@ public final class AiAgentScreen extends Screen {
 	private static final int LINE_GAP = 3;
 
 	private EditBox input;
-	private Button enableButton;
 	private Button taskModeButton;
 	private int scrollOffset;
 	private int lastEntries;
@@ -48,8 +47,8 @@ public final class AiAgentScreen extends Screen {
 
 		this.input = new EditBox(this.font, 8, h - 42, Math.max(60, w - 166), 20, Component.literal("消息"));
 		this.input.setMaxLength(512);
-		this.input.setCanLoseFocus(false);
-		this.input.setHint(Component.literal("下达指令，回车发送..."));
+		this.input.setCanLoseFocus(true);
+		this.input.setHint(Component.literal("点击输入框输入，回车发送（点击空白处即可移动）"));
 		this.addRenderableWidget(this.input);
 
 		this.addRenderableWidget(Button.builder(Component.literal("发送"), b -> sendMessage())
@@ -64,42 +63,21 @@ public final class AiAgentScreen extends Screen {
 		}).bounds(8, h - 20, 52, 18).build());
 		this.addRenderableWidget(Button.builder(Component.literal("停止"), b -> McAiAgent.get().stop())
 				.bounds(64, h - 20, 52, 18).build());
-		this.addRenderableWidget(Button.builder(Component.literal("复制"), b -> copyLast())
-				.bounds(120, h - 20, 52, 18).build());
-		this.enableButton = Button.builder(Component.literal(""), b -> {
-			McAiAgent.get().setEnabled(!McAiAgent.get().isEnabled());
-		}).bounds(176, h - 20, 64, 18).build();
-		this.addRenderableWidget(this.enableButton);
 		this.taskModeButton = Button.builder(Component.literal(""), b -> {
 			McAiAgent.get().setTaskMode(!McAiAgent.get().isTaskMode());
-		}).bounds(244, h - 20, 96, 18).build();
+		}).bounds(120, h - 20, 96, 18).build();
 		this.addRenderableWidget(this.taskModeButton);
 		this.addRenderableWidget(Button.builder(Component.literal("任务"), b -> this.minecraft.setScreen(new TaskScreen()))
-				.bounds(344, h - 20, 52, 18).build());
+				.bounds(220, h - 20, 52, 18).build());
 		this.addRenderableWidget(Button.builder(Component.literal("会话"), b -> this.minecraft.setScreen(new SessionScreen()))
-				.bounds(400, h - 20, 52, 18).build());
+				.bounds(276, h - 20, 52, 18).build());
 
-		this.setInitialFocus(this.input);
-	}
-
-	private void copyLast() {
-		List<ChatEntry> entries = McAiAgent.get().getEntries();
-		StringBuilder sb = new StringBuilder();
-		for (int i = entries.size() - 1; i >= 0; i--) {
-			ChatEntry e = entries.get(i);
-			if ("assistant".equals(e.kind) || "tool".equals(e.kind)) {
-				sb.append(e.text);
-				break;
-			}
-		}
-		if (sb.length() > 0) {
-			com.mcai.agent.ClipboardUtil.copy(sb.toString());
-		}
+		this.input.setFocused(false);
 	}
 
 	@Override
 	public boolean keyPressed(KeyEvent event) {
-		if (event.isConfirmation()) {
+		if (event.isConfirmation() && this.getFocused() instanceof EditBox) {
 			sendMessage();
 			return true;
 		}
@@ -122,9 +100,6 @@ public final class AiAgentScreen extends Screen {
 	@Override
 	public void tick() {
 		super.tick();
-		if (this.enableButton != null) {
-			this.enableButton.setMessage(Component.literal(McAiAgent.get().isEnabled() ? "禁用" : "启用"));
-		}
 		if (this.taskModeButton != null) {
 			this.taskModeButton.setMessage(Component.literal(
 					McAiAgent.get().isTaskMode() ? "任务模式:开" : "任务模式:关"));
@@ -140,7 +115,7 @@ public final class AiAgentScreen extends Screen {
 
 	@Override
 	public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
-		this.renderBackground(graphics, mouseX, mouseY, partialTick);
+		this.renderTransparentBackground(graphics);
 
 		int w = this.width;
 		int h = this.height;
@@ -235,6 +210,7 @@ public final class AiAgentScreen extends Screen {
 		if (text != null && !text.isBlank()) {
 			McAiAgent.get().sendUserMessage(text.trim());
 			this.input.setValue("");
+			this.input.setFocused(false);
 			stickToBottom = true;
 		}
 	}

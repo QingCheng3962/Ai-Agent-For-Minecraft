@@ -46,7 +46,7 @@ public final class TaskScreen extends Screen {
 
 	@Override
 	public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
-		this.renderBackground(graphics, mouseX, mouseY, partialTick);
+		this.renderTransparentBackground(graphics);
 
 		graphics.drawString(this.font, Component.literal("任务列表"), 8, 8, COLOR_TITLE);
 
@@ -109,13 +109,13 @@ public final class TaskScreen extends Screen {
 		}
 		Task t = tasks.get(row);
 		double px = event.x();
-		if (px >= x + w - 104 && px < x + w - 56) {
+		if (px >= x + w - 104 && px < x + w - 60) {
 			if ("paused".equals(t.state)) {
 				McAiAgent.get().resumeTask(t.id);
 			} else {
 				McAiAgent.get().pauseTask(t.id);
 			}
-		} else if (px >= x + w - 56 && px <= x + w) {
+		} else if (px >= x + w - 56 && px < x + w - 12) {
 			McAiAgent.get().cancelTask(t.id);
 		}
 		return true;

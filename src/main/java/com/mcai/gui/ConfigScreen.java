@@ -19,7 +19,6 @@ import java.util.concurrent.Executors;
 public final class ConfigScreen extends Screen {
 	private static final int COLOR_LABEL = 0xFFBBBBBB;
 	private static final int ROW_H = 13;
-	private static final int PANEL_TOP = 360;
 
 	private final List<EditBox> fields = new ArrayList<>();
 	private final ExecutorService modelExecutor = Executors.newSingleThreadExecutor(r -> {
@@ -42,11 +41,13 @@ public final class ConfigScreen extends Screen {
 	private Button respondToggleButton;
 	private Button chatToggleButton;
 	private Button moveToggleButton;
+	private Button controlToggleButton;
 
 	private volatile List<String> models;
 	private volatile String modelsError;
 	private volatile boolean fetchingModels;
 	private int modelScroll;
+	private int panelTop;
 
 	public ConfigScreen() {
 		super(Component.literal("AI 智能体设置"));
@@ -62,22 +63,24 @@ public final class ConfigScreen extends Screen {
 		McAiConfig cfg = ConfigManager.get();
 
 		int x = 8;
-		int fieldW = this.width - 120;
+		int labelW = 120;
+		int fieldRight = this.width - 8;
+		int fieldW = fieldRight - (x + labelW);
 		int y = 40;
 
-		this.baseUrlField = makeField(x + 120, fieldW, y, "API 地址", cfg.baseUrl);
+		this.baseUrlField = makeField(x + labelW, fieldW, y, "API 地址", cfg.baseUrl);
 		y += 26;
-		this.apiKeyField = makeField(x + 120, fieldW, y, "API 密钥", cfg.apiKey);
+		this.apiKeyField = makeField(x + labelW, fieldW, y, "API 密钥", cfg.apiKey);
 		y += 26;
-		this.modelField = makeField(x + 120, fieldW, y, "模型", cfg.model);
+		this.modelField = makeField(x + labelW, fieldW, y, "模型", cfg.model);
 		y += 26;
-		this.temperatureField = makeField(x + 120, fieldW, y, "温度", String.valueOf(cfg.temperature));
+		this.temperatureField = makeField(x + labelW, fieldW, y, "温度", String.valueOf(cfg.temperature));
 		y += 26;
-		this.maxTokensField = makeField(x + 120, fieldW, y, "最大 Token", String.valueOf(cfg.maxTokens));
+		this.maxTokensField = makeField(x + labelW, fieldW, y, "最大 Token", String.valueOf(cfg.maxTokens));
 		y += 26;
-		this.maxHistoryField = makeField(x + 120, fieldW, y, "历史条数", String.valueOf(cfg.maxHistory));
+		this.maxHistoryField = makeField(x + labelW, fieldW, y, "历史条数", String.valueOf(cfg.maxHistory));
 		y += 26;
-		this.systemPromptField = makeField(x + 120, fieldW, y, "系统提示词", cfg.systemPrompt);
+		this.systemPromptField = makeField(x + labelW, fieldW, y, "系统提示词", cfg.systemPrompt);
 		y += 34;
 
 		this.modelFilter = new EditBox(this.font, 0, 0, 200, 16, Component.literal("过滤模型"));
@@ -86,46 +89,59 @@ public final class ConfigScreen extends Screen {
 		this.modelFilter.setVisible(false);
 		this.addRenderableWidget(this.modelFilter);
 
-		this.fetchModelsButton = Button.builder(Component.literal("获取模型列表"), b -> fetchModels())
-				.bounds(x + 120, y, 100, 20).build();
-		this.addRenderableWidget(this.fetchModelsButton);
-		this.addRenderableWidget(Button.builder(Component.literal("保存并重载"), b -> save())
-				.bounds(x + 226, y, 110, 20).build());
+		int btnRight = fieldRight;
 		this.addRenderableWidget(Button.builder(Component.literal("返回"), b -> this.minecraft.setScreen(new AiAgentScreen()))
-				.bounds(x + 342, y, 60, 20).build());
+				.bounds(btnRight - 60, y, 60, 20).build());
+		btnRight -= 66;
+		this.addRenderableWidget(Button.builder(Component.literal("保存并重载"), b -> save())
+				.bounds(btnRight - 110, y, 110, 20).build());
+		btnRight -= 116;
+		this.fetchModelsButton = Button.builder(Component.literal("获取模型列表"), b -> fetchModels())
+				.bounds(btnRight - 100, y, 100, 20).build();
+		this.addRenderableWidget(this.fetchModelsButton);
 		y += 26;
+
+		int toggleW = Math.max(100, (fieldW - 6) / 2);
 		this.shellToggleButton = Button.builder(Component.literal(""), b -> {
 			McAiConfig c = ConfigManager.get();
 			c.allowShell = !c.allowShell;
 			ConfigManager.save();
-		}).bounds(x + 120, y, 130, 20).build();
+		}).bounds(x + labelW, y, toggleW, 20).build();
 		this.addRenderableWidget(this.shellToggleButton);
 		this.fileToggleButton = Button.builder(Component.literal(""), b -> {
 			McAiConfig c = ConfigManager.get();
 			c.allowFileWrite = !c.allowFileWrite;
 			ConfigManager.save();
-		}).bounds(x + 256, y, 130, 20).build();
+		}).bounds(x + labelW + toggleW + 6, y, toggleW, 20).build();
 		this.addRenderableWidget(this.fileToggleButton);
 		y += 26;
 		this.respondToggleButton = Button.builder(Component.literal(""), b -> {
 			McAiConfig c = ConfigManager.get();
 			c.autoRespondEvents = !c.autoRespondEvents;
 			ConfigManager.save();
-		}).bounds(x + 120, y, 130, 20).build();
+		}).bounds(x + labelW, y, toggleW, 20).build();
 		this.addRenderableWidget(this.respondToggleButton);
 		this.chatToggleButton = Button.builder(Component.literal(""), b -> {
 			McAiConfig c = ConfigManager.get();
 			c.watchChat = !c.watchChat;
 			ConfigManager.save();
-		}).bounds(x + 256, y, 130, 20).build();
+		}).bounds(x + labelW + toggleW + 6, y, toggleW, 20).build();
 		this.addRenderableWidget(this.chatToggleButton);
 		y += 26;
 		this.moveToggleButton = Button.builder(Component.literal(""), b -> {
 			McAiConfig c = ConfigManager.get();
 			c.windowMove = !c.windowMove;
 			ConfigManager.save();
-		}).bounds(x + 120, y, 130, 20).build();
+		}).bounds(x + labelW, y, toggleW, 20).build();
 		this.addRenderableWidget(this.moveToggleButton);
+		y += 26;
+		this.controlToggleButton = Button.builder(Component.literal(""), b -> {
+			McAiConfig c = ConfigManager.get();
+			c.allowPlayerControl = !c.allowPlayerControl;
+			ConfigManager.save();
+		}).bounds(x + labelW, y, toggleW, 20).build();
+		this.addRenderableWidget(this.controlToggleButton);
+		this.panelTop = y + 22;
 
 		this.setInitialFocus(this.modelField);
 	}
@@ -208,6 +224,10 @@ public final class ConfigScreen extends Screen {
 			this.moveToggleButton.setMessage(Component.literal(
 					ConfigManager.get().windowMove ? "窗口内移动:开" : "窗口内移动:关"));
 		}
+		if (this.controlToggleButton != null) {
+			this.controlToggleButton.setMessage(Component.literal(
+					ConfigManager.get().allowPlayerControl ? "允许操控玩家:开" : "允许操控玩家:关"));
+		}
 	}
 
 	@Override
@@ -229,7 +249,7 @@ public final class ConfigScreen extends Screen {
 					8, y + 5, COLOR_LABEL);
 			y += 26;
 		}
-		super.renderBackground(graphics, mouseX, mouseY, partialTick);
+		super.renderTransparentBackground(graphics);
 	}
 
 	private void renderModelPanel(GuiGraphics graphics) {
@@ -240,7 +260,7 @@ public final class ConfigScreen extends Screen {
 
 		int x = 8;
 		int w = this.width - 16;
-		int top = PANEL_TOP;
+		int top = this.panelTop;
 		int bottom = this.height - 10;
 		int viewport = bottom - top - 20;
 		if (bottom <= top + 30) {
@@ -299,7 +319,7 @@ public final class ConfigScreen extends Screen {
 		if (models != null) {
 			int x = 8;
 			int w = this.width - 16;
-			int listTop = PANEL_TOP + 30;
+			int listTop = this.panelTop + 30;
 			int listBottom = this.height - 10 - 2;
 			if (event.x() >= x && event.x() <= x + w
 					&& event.y() >= listTop && event.y() < listBottom) {

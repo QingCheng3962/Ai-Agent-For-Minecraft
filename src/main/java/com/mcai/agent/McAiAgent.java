@@ -46,6 +46,7 @@ public final class McAiAgent {
 	private final AgentActions actions = new AgentActions();
 	private final CopyOnWriteArrayList<ChatEntry> entries = new CopyOnWriteArrayList<>();
 	private final List<ChatMessage> history = new CopyOnWriteArrayList<>();
+	private final Object historyLock = new Object();
 	private final LinkedBlockingQueue<Task> taskQueue = new LinkedBlockingQueue<>();
 	private final CopyOnWriteArrayList<Task> tasks = new CopyOnWriteArrayList<>();
 	private final AtomicLong taskIds = new AtomicLong(1);
@@ -119,8 +120,10 @@ public final class McAiAgent {
 
 	public void onGameEvent(String text) {
 		entries.add(new ChatEntry("event", text));
-		history.add(ChatMessage.system("[游戏事件] " + text));
-		trimHistory(history, ConfigManager.get().maxHistory);
+		synchronized (historyLock) {
+			history.add(ChatMessage.system("[游戏事件] " + text));
+			trimHistory(history, ConfigManager.get().maxHistory);
+		}
 		if (ConfigManager.get().autoRespondEvents && taskQueue.isEmpty() && currentTask == null) {
 			addTask(text, false);
 		}
@@ -136,6 +139,7 @@ public final class McAiAgent {
 		Thread.interrupted();
 		workerThread = Thread.currentThread();
 		running.set(true);
+		String taskSession = this.session;
 		try {
 			McAiConfig cfg = ConfigManager.get();
 			List<ChatMessage> turnHistory = new ArrayList<>(history);
@@ -231,9 +235,16 @@ public final class McAiAgent {
 			if (lastText != null && !lastText.isEmpty() && running.get()) {
 				entries.add(new ChatEntry("assistant", lastText));
 			}
-			history.clear();
-			history.addAll(turnHistory);
-			com.mcai.config.SessionManager.save(session, new ArrayList<>(history));
+			boolean sameSession = session.equals(taskSession);
+			if (sameSession) {
+				synchronized (historyLock) {
+					history.clear();
+					history.addAll(turnHistory);
+				}
+			}
+			if (sameSession || com.mcai.config.SessionManager.listSessions().contains(taskSession)) {
+				com.mcai.config.SessionManager.save(taskSession, new ArrayList<>(turnHistory));
+			}
 		} catch (Exception e) {
 			if (running.get()) {
 				entries.add(new ChatEntry("error", "智能体出错: " + e));
@@ -254,6 +265,9 @@ public final class McAiAgent {
 			return;
 		}
 		if ("running".equals(t.state) || "pending".equals(t.state)) {
+			if ("pending".equals(t.state)) {
+				taskQueue.remove(t);
+			}
 			t.state = "paused";
 		}
 	}
@@ -348,7 +362,9 @@ public final class McAiAgent {
 
 	public void clear() {
 		entries.clear();
-		history.clear();
+		synchronized (historyLock) {
+			history.clear();
+		}
 		com.mcai.config.SessionManager.save(session, new ArrayList<>(history));
 	}
 
@@ -391,8 +407,10 @@ public final class McAiAgent {
 		}
 		com.mcai.config.SessionManager.save(session, new ArrayList<>(history));
 		session = name;
-		history.clear();
-		history.addAll(com.mcai.config.SessionManager.load(session));
+		synchronized (historyLock) {
+			history.clear();
+			history.addAll(com.mcai.config.SessionManager.load(session));
+		}
 		rebuildEntriesFromHistory();
 	}
 
@@ -403,7 +421,9 @@ public final class McAiAgent {
 		}
 		com.mcai.config.SessionManager.save(session, new ArrayList<>(history));
 		session = s;
-		history.clear();
+		synchronized (historyLock) {
+			history.clear();
+		}
 		com.mcai.config.SessionManager.save(session, new ArrayList<>(history));
 		rebuildEntriesFromHistory();
 	}
@@ -415,8 +435,10 @@ public final class McAiAgent {
 		com.mcai.config.SessionManager.delete(name);
 		if (name.equals(session)) {
 			session = "default";
-			history.clear();
-			history.addAll(com.mcai.config.SessionManager.load(session));
+			synchronized (historyLock) {
+				history.clear();
+				history.addAll(com.mcai.config.SessionManager.load(session));
+			}
 			rebuildEntriesFromHistory();
 		}
 	}
@@ -489,6 +511,9 @@ public final class McAiAgent {
 
 	private ActionResult execute(ActionSpec spec) {
 		String name = spec.name;
+		if (!ConfigManager.get().allowPlayerControl && Tools.isControlTool(name)) {
+			return fail("操控玩家已禁用，请在设置中开启「允许操控玩家」");
+		}
 		try {
 			switch (name) {
 				case "get_state":

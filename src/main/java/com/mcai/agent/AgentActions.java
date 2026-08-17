@@ -1,5 +1,10 @@
 package com.mcai.agent;
 
+import com.mcai.config.ConfigManager;
+import com.mcai.gui.AiAgentScreen;
+import com.mojang.blaze3d.platform.InputConstants;
+import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
+import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.Options;
 import net.minecraft.client.player.LocalPlayer;
@@ -8,18 +13,19 @@ import net.minecraft.world.InteractionHand;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.HitResult;
+import org.lwjgl.glfw.GLFW;
 
 public final class AgentActions {
 	private final Minecraft mc;
 
-	private int forwardTicks;
-	private int backTicks;
-	private int leftTicks;
-	private int rightTicks;
-	private int jumpTicks;
-	private int attackTicks;
-	private boolean sneakOn;
-	private boolean sprintOn;
+	private volatile int forwardTicks;
+	private volatile int backTicks;
+	private volatile int leftTicks;
+	private volatile int rightTicks;
+	private volatile int jumpTicks;
+	private volatile int attackTicks;
+	private volatile boolean sneakOn;
+	private volatile boolean sprintOn;
 
 	public AgentActions() {
 		this.mc = Minecraft.getInstance();
@@ -35,14 +41,16 @@ public final class AgentActions {
 			releaseKeys();
 			return;
 		}
-		o.keyUp.setDown(forwardTicks > 0);
-		o.keyDown.setDown(backTicks > 0);
-		o.keyLeft.setDown(leftTicks > 0);
-		o.keyRight.setDown(rightTicks > 0);
-		o.keyJump.setDown(jumpTicks > 0);
-		o.keyShift.setDown(sneakOn);
-		o.keySprint.setDown(sprintOn);
-		o.keyAttack.setDown(attackTicks > 0);
+		boolean control = ConfigManager.get().allowPlayerControl;
+		boolean playerInput = isPlayerInputEnabled();
+		applyKey(o.keyUp, control && forwardTicks > 0, playerInput);
+		applyKey(o.keyDown, control && backTicks > 0, playerInput);
+		applyKey(o.keyLeft, control && leftTicks > 0, playerInput);
+		applyKey(o.keyRight, control && rightTicks > 0, playerInput);
+		applyKey(o.keyJump, control && jumpTicks > 0, playerInput);
+		applyKey(o.keyShift, control && sneakOn, playerInput);
+		applyKey(o.keySprint, control && sprintOn, playerInput);
+		applyKey(o.keyAttack, control && attackTicks > 0, playerInput);
 		if (forwardTicks > 0) {
 			forwardTicks--;
 		}
@@ -61,6 +69,35 @@ public final class AgentActions {
 		if (attackTicks > 0) {
 			attackTicks--;
 		}
+	}
+
+	private void applyKey(KeyMapping key, boolean aiDown, boolean playerInput) {
+		key.setDown(aiDown || (playerInput && isRawDown(key)));
+	}
+
+	private boolean isPlayerInputEnabled() {
+		if (mc.screen == null) {
+			return true;
+		}
+		if (mc.screen instanceof AiAgentScreen s) {
+			return ConfigManager.get().windowMove && !s.isInputFocused();
+		}
+		return false;
+	}
+
+	private boolean isRawDown(KeyMapping key) {
+		if (mc.getWindow() == null) {
+			return false;
+		}
+		long win = mc.getWindow().handle();
+		InputConstants.Key k = KeyBindingHelper.getBoundKeyOf(key);
+		if (k.getType() == InputConstants.Type.KEYSYM) {
+			return GLFW.glfwGetKey(win, k.getValue()) == GLFW.GLFW_PRESS;
+		}
+		if (k.getType() == InputConstants.Type.MOUSE) {
+			return GLFW.glfwGetMouseButton(win, k.getValue()) == GLFW.GLFW_PRESS;
+		}
+		return false;
 	}
 
 	public void releaseKeys() {
@@ -103,16 +140,6 @@ public final class AgentActions {
 	public void stop() {
 		forwardTicks = backTicks = leftTicks = rightTicks = jumpTicks = attackTicks = 0;
 		sneakOn = sprintOn = false;
-		if (mc.options != null) {
-			mc.options.keyUp.setDown(false);
-			mc.options.keyDown.setDown(false);
-			mc.options.keyLeft.setDown(false);
-			mc.options.keyRight.setDown(false);
-			mc.options.keyJump.setDown(false);
-			mc.options.keyShift.setDown(false);
-			mc.options.keySprint.setDown(false);
-			mc.options.keyAttack.setDown(false);
-		}
 	}
 
 	public void releaseAll() {

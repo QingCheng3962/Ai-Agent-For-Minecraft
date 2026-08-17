@@ -60,7 +60,7 @@ public final class SessionScreen extends Screen {
 
 	@Override
 	public boolean keyPressed(KeyEvent event) {
-		if (event.isConfirmation()) {
+		if (event.isConfirmation() && this.getFocused() instanceof EditBox) {
 			createNew();
 			return true;
 		}
@@ -69,7 +69,7 @@ public final class SessionScreen extends Screen {
 
 	@Override
 	public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
-		this.renderBackground(graphics, mouseX, mouseY, partialTick);
+		this.renderTransparentBackground(graphics);
 
 		String active = McAiAgent.get().getActiveSession();
 		graphics.drawString(this.font, Component.literal("会话历史（当前: " + active + "）"),

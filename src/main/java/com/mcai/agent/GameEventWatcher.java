@@ -23,6 +23,8 @@ public final class GameEventWatcher {
 			wasDead = false;
 			lastLowHealth = false;
 			lastHostile = false;
+			lastNight = false;
+			lastDimension = "";
 			return;
 		}
 		if ((++tickCounter % 10) != 0) {

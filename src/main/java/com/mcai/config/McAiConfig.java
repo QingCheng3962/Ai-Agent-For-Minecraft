@@ -10,6 +10,7 @@ public final class McAiConfig {
 	public int maxToolIterations = 25;
 	public boolean enabled = true;
 	public boolean taskMode = true;
+	public boolean allowPlayerControl = false;
 	public boolean allowShell = false;
 	public boolean allowFileWrite = false;
 	public boolean watchHealth = true;

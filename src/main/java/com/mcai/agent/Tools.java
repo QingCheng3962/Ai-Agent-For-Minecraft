@@ -13,9 +13,27 @@ public final class Tools {
 	private Tools() {
 	}
 
+	public static boolean isControlTool(String name) {
+		switch (name) {
+			case "move":
+			case "jump":
+			case "sneak":
+			case "sprint":
+			case "stop":
+			case "look":
+			case "use_held_item":
+			case "attack":
+			case "select_hotbar":
+			case "drop_held_item":
+				return true;
+			default:
+				return false;
+		}
+	}
+
 	public static List<ToolSpec> forConfig(McAiConfig cfg) {
 		List<ToolSpec> tools = new ArrayList<>();
-		tools.addAll(gameTools());
+		tools.addAll(gameTools(cfg.allowPlayerControl));
 		if (cfg.allowShell) {
 			tools.add(runCommandTool());
 		}
@@ -35,35 +53,38 @@ public final class Tools {
 		McAiConfig cfg = McAiConfig.defaults();
 		cfg.allowShell = true;
 		cfg.allowFileWrite = true;
+		cfg.allowPlayerControl = true;
 		return forConfig(cfg);
 	}
 
-	private static List<ToolSpec> gameTools() {
+	private static List<ToolSpec> gameTools(boolean control) {
 		List<ToolSpec> tools = new ArrayList<>();
 		tools.add(new ToolSpec("get_state", "Read the current player and world state as JSON. Call this to observe "
 				+ "your position, health, inventory and surroundings before acting and after actions.", emptyParams()));
-		tools.add(new ToolSpec("move", "Move the player in a direction for a number of ticks (20 ticks = 1 second). "
-				+ "left/right strafe sideways. Use stop() to halt early.",
-				obj(e("direction", en("forward", "back", "left", "right"), "Direction to move"),
-						e("ticks", number(1, 100), "How many ticks to keep moving"))));
-		tools.add(new ToolSpec("jump", "Jump for a number of ticks.",
-				obj(e("ticks", number(1, 20), "How many ticks to keep jumping"))));
-		tools.add(new ToolSpec("sneak", "Toggle sneaking.",
-				obj(e("on", bool(), "true to start sneaking, false to stop"))));
-		tools.add(new ToolSpec("sprint", "Toggle sprinting.",
-				obj(e("on", bool(), "true to start sprinting, false to stop"))));
-		tools.add(new ToolSpec("stop", "Stop all movement and release all held keys immediately.", emptyParams()));
-		tools.add(new ToolSpec("look", "Aim the camera at an absolute yaw and pitch. yaw 0 = +Z (south), "
-				+ "90 = -X (west), -90 = +X (east), 180 = north. pitch positive looks up.",
-				obj(e("yaw", number(-180, 180), "Horizontal rotation"),
-						e("pitch", number(-90, 90), "Vertical rotation"))));
-		tools.add(new ToolSpec("use_held_item", "Right-click: use the held item, place a block, or interact with the "
-				+ "block/entity currently under the crosshair.", emptyParams()));
-		tools.add(new ToolSpec("attack", "Left-click: break the block or attack the entity under the crosshair.",
-				emptyParams()));
-		tools.add(new ToolSpec("select_hotbar", "Select a hotbar slot.",
-				obj(e("slot", number(0, 8), "Hotbar slot index 0-8"))));
-		tools.add(new ToolSpec("drop_held_item", "Drop the currently held item (one).", emptyParams()));
+		if (control) {
+			tools.add(new ToolSpec("move", "Move the player in a direction for a number of ticks (20 ticks = 1 second). "
+					+ "left/right strafe sideways. Use stop() to halt early.",
+					obj(e("direction", en("forward", "back", "left", "right"), "Direction to move"),
+							e("ticks", number(1, 100), "How many ticks to keep moving"))));
+			tools.add(new ToolSpec("jump", "Jump for a number of ticks.",
+					obj(e("ticks", number(1, 20), "How many ticks to keep jumping"))));
+			tools.add(new ToolSpec("sneak", "Toggle sneaking.",
+					obj(e("on", bool(), "true to start sneaking, false to stop"))));
+			tools.add(new ToolSpec("sprint", "Toggle sprinting.",
+					obj(e("on", bool(), "true to start sprinting, false to stop"))));
+			tools.add(new ToolSpec("stop", "Stop all movement and release all held keys immediately.", emptyParams()));
+			tools.add(new ToolSpec("look", "Aim the camera at an absolute yaw and pitch. yaw 0 = +Z (south), "
+					+ "90 = -X (west), -90 = +X (east), 180 = north. pitch positive looks up.",
+					obj(e("yaw", number(-180, 180), "Horizontal rotation"),
+							e("pitch", number(-90, 90), "Vertical rotation"))));
+			tools.add(new ToolSpec("use_held_item", "Right-click: use the held item, place a block, or interact with the "
+					+ "block/entity currently under the crosshair.", emptyParams()));
+			tools.add(new ToolSpec("attack", "Left-click: break the block or attack the entity under the crosshair.",
+					obj(e("ticks", number(1, 80), "How many ticks to keep attacking/mining (default 8)"))));
+			tools.add(new ToolSpec("select_hotbar", "Select a hotbar slot.",
+					obj(e("slot", number(0, 8), "Hotbar slot index 0-8"))));
+			tools.add(new ToolSpec("drop_held_item", "Drop the currently held item (one).", emptyParams()));
+		}
 		tools.add(new ToolSpec("chat", "Send a public chat message to the server.",
 				obj(e("message", str(), "The message text"))));
 		return tools;
