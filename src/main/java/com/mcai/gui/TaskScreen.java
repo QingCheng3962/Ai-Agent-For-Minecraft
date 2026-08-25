@@ -48,44 +48,64 @@ public final class TaskScreen extends Screen {
 	public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
 		this.renderTransparentBackground(graphics);
 
-		graphics.drawString(this.font, Component.literal("任务列表"), 8, 8, COLOR_TITLE);
+		int w = this.width;
+		Ui.panel(graphics, 4, 4, w - 4, 26);
+		graphics.drawString(this.font, Component.literal("\u25c9 任务列表"), 10, 9, Ui.TEXT);
 
-		int top = 24;
+		int top = 30;
 		int bottom = this.height - 32;
 		List<Task> tasks = McAiAgent.get().getTasks();
 		if (tasks.isEmpty()) {
+			Ui.panel(graphics, 5, top - 1, w - 5, bottom + 1);
 			graphics.drawString(this.font, Component.literal("暂无任务。回到对话窗口下达指令即可创建任务。"),
-					8, top + 4, 0xFF8F8F8F);
+					10, top + 8, Ui.TEXT_DIM);
 			super.render(graphics, mouseX, mouseY, partialTick);
 			return;
 		}
 
 		int x = 8;
-		int w = this.width - 16;
+		int listW = w - 16;
 		int viewport = bottom - top;
 		int totalH = tasks.size() * ROW_H;
 		int maxOffset = Math.max(0, totalH - viewport);
 		taskScroll = Math.max(0, Math.min(taskScroll, maxOffset));
 
-		graphics.enableScissor(x, top, x + w, bottom);
+		Ui.panel(graphics, 5, top - 1, w - 5, bottom + 1);
+		graphics.enableScissor(x, top, x + listW, bottom);
 		int yy = top - taskScroll;
 		for (int i = 0; i < tasks.size(); i++) {
 			Task t = tasks.get(i);
 			if (yy + ROW_H >= top && yy <= bottom) {
+				boolean hover = mouseY >= yy && mouseY < yy + ROW_H;
+				int rowBg = "running".equals(t.state) ? 0x66265B3A : (hover ? 0x332A3447 : 0x00000000);
+				if (rowBg != 0x00000000) {
+					graphics.fill(x, yy, x + listW, yy + ROW_H, rowBg);
+				}
 				String label = "#" + t.id + " [" + stateLabel(t.state) + "] " + truncate(t.text, 58);
 				graphics.drawString(this.font, Component.literal(label), x + 2, yy + 4, stateColor(t.state));
-				drawMiniButton(graphics, x + w - 104, yy + 2, 44, "暂停/继续", "paused".equals(t.state));
-				drawMiniButton(graphics, x + w - 56, yy + 2, 44, "取消", true);
+				drawMiniButton(graphics, x + listW - 104, yy + 2, 44, "暂停/继续",
+						hover && mouseX >= x + listW - 104 && mouseX < x + listW - 60, "paused".equals(t.state));
+				drawMiniButton(graphics, x + listW - 56, yy + 2, 44, "取消",
+						hover && mouseX >= x + listW - 56 && mouseX < x + listW - 12, false);
 			}
 			yy += ROW_H;
 		}
 		graphics.disableScissor();
 
+		if (maxOffset > 0) {
+			int barX = w - 12;
+			int barH = Math.max(24, viewport * viewport / Math.max(totalH, viewport));
+			int barY = top + ((taskScroll * (viewport - barH)) / maxOffset);
+			graphics.fill(barX, top, barX + 4, bottom, 0x33203040);
+			graphics.fill(barX, barY, barX + 4, barY + barH, 0xAA6FB8D8);
+		}
+
 		super.render(graphics, mouseX, mouseY, partialTick);
 	}
 
-	private void drawMiniButton(GuiGraphics graphics, int x, int y, int w, String label, boolean active) {
-		graphics.fill(x, y, x + w, y + 14, active ? 0xFF3A3F52 : 0xFF2A2E3C);
+	private void drawMiniButton(GuiGraphics graphics, int x, int y, int w, String label, boolean hover, boolean paused) {
+		int bg = hover ? 0xFF3A4558 : (paused ? 0xFF4A3A16 : 0xFF2A2E3C);
+		graphics.fill(x, y, x + w, y + 14, bg);
 		int textW = this.font.width(label);
 		graphics.drawString(this.font, label, x + (w - textW) / 2, y + 3, 0xFFDDDDDD);
 	}

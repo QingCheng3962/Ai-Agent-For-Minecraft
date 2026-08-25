@@ -354,7 +354,14 @@ public final class ConfigScreen extends Screen {
 
 	@Override
 	public void onClose() {
+		modelExecutor.shutdownNow();
 		super.onClose();
+	}
+
+	@Override
+	public void removed() {
+		modelExecutor.shutdownNow();
+		super.removed();
 	}
 
 	private static double parseDouble(String s, double def) {

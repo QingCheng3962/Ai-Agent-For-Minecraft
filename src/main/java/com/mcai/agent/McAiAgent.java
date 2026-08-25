@@ -61,6 +61,7 @@ public final class McAiAgent {
 	private volatile String session = "default";
 
 	private McAiAgent() {
+		taskMode = ConfigManager.get().taskMode;
 		history.addAll(com.mcai.config.SessionManager.load(session));
 		rebuildEntriesFromHistory();
 		worker.setDaemon(true);
@@ -145,6 +146,10 @@ public final class McAiAgent {
 			List<ChatMessage> turnHistory = new ArrayList<>(history);
 			if (turnHistory.isEmpty()) {
 				turnHistory.add(ChatMessage.system(cfg.systemPrompt));
+			} else if (!"system".equals(turnHistory.get(0).role)) {
+				turnHistory.add(0, ChatMessage.system(cfg.systemPrompt));
+			} else if (!cfg.systemPrompt.equals(turnHistory.get(0).content)) {
+				turnHistory.set(0, ChatMessage.system(cfg.systemPrompt));
 			}
 			if (task.userTriggered) {
 				turnHistory.add(ChatMessage.user(taskMode ? task.text + TASK_SUFFIX : task.text));
@@ -395,6 +400,11 @@ public final class McAiAgent {
 
 	public void setTaskMode(boolean taskMode) {
 		this.taskMode = taskMode;
+		McAiConfig cfg = ConfigManager.get();
+		if (cfg.taskMode != taskMode) {
+			cfg.taskMode = taskMode;
+			ConfigManager.save();
+		}
 	}
 
 	public String getActiveSession() {
@@ -500,12 +510,13 @@ public final class McAiAgent {
 	}
 
 	private static void trimHistory(List<ChatMessage> list, int max) {
-		while (list.size() > Math.max(4, max)) {
-			ChatMessage first = list.get(0);
-			if ("system".equals(first.role)) {
+		int limit = Math.max(4, max);
+		int guard = (!list.isEmpty() && "system".equals(list.get(0).role)) ? 1 : 0;
+		while (list.size() > limit) {
+			if (list.size() <= guard) {
 				break;
 			}
-			list.remove(0);
+			list.remove(guard);
 		}
 	}
 

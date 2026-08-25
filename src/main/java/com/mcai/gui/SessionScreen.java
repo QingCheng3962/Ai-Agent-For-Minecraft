@@ -71,50 +71,67 @@ public final class SessionScreen extends Screen {
 	public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
 		this.renderTransparentBackground(graphics);
 
+		int w = this.width;
 		String active = McAiAgent.get().getActiveSession();
-		graphics.drawString(this.font, Component.literal("会话历史（当前: " + active + "）"),
-				8, 8, COLOR_TITLE);
+		Ui.panel(graphics, 4, 4, w - 4, 26);
+		graphics.drawString(this.font, Component.literal("\u25c9 会话历史（当前: " + active + "）"), 10, 9, Ui.TEXT);
 
-		int top = 24;
+		int top = 30;
 		int bottom = this.height - 50;
 		List<String> sessions = SessionManager.listSessions();
 		if (sessions.isEmpty()) {
+			Ui.panel(graphics, 5, top - 1, w - 5, bottom + 1);
 			graphics.drawString(this.font, Component.literal("暂无会话。输入名称点新建即可。"),
-					8, top + 4, 0xFF8F8F8F);
+					10, top + 8, Ui.TEXT_DIM);
 			super.render(graphics, mouseX, mouseY, partialTick);
 			return;
 		}
 
 		int x = 8;
-		int w = this.width - 16;
+		int listW = w - 16;
 		int viewport = bottom - top;
 		int totalH = sessions.size() * ROW_H;
 		int maxOffset = Math.max(0, totalH - viewport);
 		scroll = Math.max(0, Math.min(scroll, maxOffset));
 
-		graphics.enableScissor(x, top, x + w, bottom);
+		Ui.panel(graphics, 5, top - 1, w - 5, bottom + 1);
+		graphics.enableScissor(x, top, x + listW, bottom);
 		int yy = top - scroll;
 		for (int i = 0; i < sessions.size(); i++) {
 			String s = sessions.get(i);
 			if (yy + ROW_H >= top && yy <= bottom) {
 				boolean isActive = s.equals(active);
+				boolean hover = mouseY >= yy && mouseY < yy + ROW_H;
+				int rowBg = isActive ? 0x66308AB0 : (hover ? 0x332A3447 : 0x00000000);
+				if (rowBg != 0x00000000) {
+					graphics.fill(x, yy, x + listW, yy + ROW_H, rowBg);
+				}
 				graphics.drawString(this.font, Component.literal((isActive ? "\u25b6 " : "  ") + s),
 						x + 2, yy + 4, isActive ? COLOR_ACTIVE : COLOR_NORMAL);
 				if (!"default".equals(s)) {
-					drawMiniButton(graphics, x + w - 52, yy + 2, 44, "删除", false);
+					drawMiniButton(graphics, x + listW - 52, yy + 2, 44, "删除", hover && mouseX >= x + listW - 52);
 				}
+				boolean switchHover = hover && mouseX >= x + listW - 96 && mouseX < x + listW - 56;
 				graphics.drawString(this.font, Component.literal("切换"),
-						x + w - 96, yy + 4, 0xFF7CD6FF);
+						x + listW - 96, yy + 4, switchHover ? Ui.ACCENT : 0xFF7CD6FF);
 			}
 			yy += ROW_H;
 		}
 		graphics.disableScissor();
 
+		if (maxOffset > 0) {
+			int barX = w - 12;
+			int barH = Math.max(24, viewport * viewport / Math.max(totalH, viewport));
+			int barY = top + ((scroll * (viewport - barH)) / maxOffset);
+			graphics.fill(barX, top, barX + 4, bottom, 0x33203040);
+			graphics.fill(barX, barY, barX + 4, barY + barH, 0xAA6FB8D8);
+		}
+
 		super.render(graphics, mouseX, mouseY, partialTick);
 	}
 
-	private void drawMiniButton(GuiGraphics graphics, int x, int y, int w, String label, boolean active) {
-		graphics.fill(x, y, x + w, y + 14, active ? 0xFF3A3F52 : 0xFF2A2E3C);
+	private void drawMiniButton(GuiGraphics graphics, int x, int y, int w, String label, boolean hover) {
+		graphics.fill(x, y, x + w, y + 14, hover ? 0xFF3A4558 : 0xFF2A2E3C);
 		int textW = this.font.width(label);
 		graphics.drawString(this.font, label, x + (w - textW) / 2, y + 3, 0xFFDDDDDD);
 	}

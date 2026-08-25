@@ -2,6 +2,8 @@ package com.mcai;
 
 import com.mcai.agent.GameEventWatcher;
 import com.mcai.agent.McAiAgent;
+import com.mcai.chat.ChatCommands;
+import com.mcai.chat.ChatResponder;
 import com.mcai.config.ConfigManager;
 import com.mcai.gui.AiAgentScreen;
 import com.mojang.blaze3d.platform.InputConstants;
@@ -32,6 +34,9 @@ public final class McAiClient implements ClientModInitializer {
 	public void onInitializeClient() {
 		KeyBindingHelper.registerKeyBinding(OPEN_KEY);
 
+		ChatResponder.init();
+		ChatCommands.register();
+
 		ClientTickEvents.END_CLIENT_TICK.register(mc -> {
 			McAiAgent.get().onClientTick(mc);
 			eventWatcher.tick(mc);
@@ -51,6 +56,7 @@ public final class McAiClient implements ClientModInitializer {
 		});
 
 		ClientReceiveMessageEvents.CHAT.register((component, message, profile, bound, instant) -> {
+			ChatResponder.getInstance().onChatMessage(component.getString(), profile);
 			if (!ConfigManager.get().watchChat || profile == null) {
 				return;
 			}
@@ -61,6 +67,10 @@ public final class McAiClient implements ClientModInitializer {
 				return;
 			}
 			McAiAgent.get().onGameEvent("聊天 " + profile.name() + ": " + component.getString());
+		});
+
+		ClientReceiveMessageEvents.GAME.register((component, overlay) -> {
+			ChatResponder.getInstance().onGameMessage(component.getString());
 		});
 
 		HudRenderCallback.EVENT.register((graphics, deltaTracker) -> {

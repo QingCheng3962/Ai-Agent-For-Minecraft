@@ -108,9 +108,11 @@ public final class ComputerTools {
 			return "{\"ok\":false,\"error\":\"非法路径\"}";
 		}
 		try {
+			String data = content == null ? "" : content;
 			Files.createDirectories(target.getParent());
-			Files.writeString(target, content == null ? "" : content, StandardCharsets.UTF_8);
-			return "{\"ok\":true,\"path\":\"" + jsonEscape(target.toString()) + "\",\"bytes\":\"" + content.length() + "\"}";
+			Files.writeString(target, data, StandardCharsets.UTF_8);
+			return "{\"ok\":true,\"path\":\"" + jsonEscape(target.toString()) + "\",\"bytes\":\""
+					+ data.getBytes(StandardCharsets.UTF_8).length + "\"}";
 		} catch (IOException e) {
 			return "{\"ok\":false,\"error\":\"写入失败: " + jsonEscape(e.getMessage()) + "\"}";
 		}
