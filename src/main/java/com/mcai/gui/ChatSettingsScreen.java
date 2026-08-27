@@ -2,12 +2,14 @@ package com.mcai.gui;
 
 import com.mcai.chat.ChatConfig;
 import com.mcai.chat.ChatResponder;
+import com.mcai.chat.PromptTemplateManager;
 import com.mcai.config.ConfigManager;
 import com.mcai.config.McAiConfig;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.network.chat.Component;
 import net.minecraft.util.FormattedCharSequence;
 
@@ -26,7 +28,6 @@ public final class ChatSettingsScreen extends Screen {
 	private EditBox scheduleField;
 	private EditBox cooldownField;
 	private EditBox imageModelField;
-	private Button templateButton;
 	private Ui.ToggleButton autoReplyToggle;
 	private Ui.ToggleButton triggerToggle;
 	private Ui.ToggleButton scheduleToggle;
@@ -34,6 +35,12 @@ public final class ChatSettingsScreen extends Screen {
 	private Ui.ToggleButton restrictionToggle;
 	private Ui.ToggleButton imageToggle;
 	private int logScroll;
+	private int lastLogCount;
+	private boolean logStickToBottom = true;
+
+	private boolean showingTemplates;
+	private EditBox templateNameField;
+	private int templateScroll;
 
 	public ChatSettingsScreen() {
 		super(Component.literal("AI Player 设置"));
@@ -71,9 +78,21 @@ public final class ChatSettingsScreen extends Screen {
 		this.imageModelField = makeField(x + labelW, fieldW, y, "文生图模型", c.imageModel);
 		y += 34;
 
-		this.templateButton = Button.builder(Component.literal(""), b -> cycleTemplate())
-				.bounds(x + labelW, y, fieldW, 20).build();
-		this.addRenderableWidget(this.templateButton);
+		int tplRowY = y;
+		this.templateNameField = new EditBox(this.font, x + labelW, tplRowY,
+				Math.max(60, fieldW - 114), 20, Component.literal("模板名称"));
+		this.templateNameField.setMaxLength(40);
+		this.templateNameField.setCanLoseFocus(true);
+		this.templateNameField.setHint(Component.literal("输入模板名称"));
+		this.addRenderableWidget(this.templateNameField);
+		this.addRenderableWidget(Button.builder(Component.literal("保存为模板"), b -> saveAsTemplate())
+				.bounds(x + labelW + fieldW - 108, tplRowY, 108, 20).build());
+		y += 26;
+
+		this.addRenderableWidget(Button.builder(Component.literal(""), b -> {
+			showingTemplates = !showingTemplates;
+			templateScroll = 0;
+		}).bounds(x + labelW, y, fieldW, 20).build());
 		y += 26;
 
 		int toggleW = Math.max(110, (fieldW - 6) / 2);
@@ -82,6 +101,10 @@ public final class ChatSettingsScreen extends Screen {
 				() -> ChatResponder.getInstance().getConfig().autoReplyEnabled, b -> {
 					ChatConfig cfg = ChatResponder.getInstance().getConfig();
 					cfg.autoReplyEnabled = !cfg.autoReplyEnabled;
+					if (cfg.autoReplyEnabled) {
+						cfg.triggerEnabled = false;
+						cfg.scheduleEnabled = false;
+					}
 					cfg.save();
 				});
 		this.addRenderableWidget(this.autoReplyToggle);
@@ -89,6 +112,9 @@ public final class ChatSettingsScreen extends Screen {
 				() -> ChatResponder.getInstance().getConfig().triggerEnabled, b -> {
 					ChatConfig cfg = ChatResponder.getInstance().getConfig();
 					cfg.triggerEnabled = !cfg.triggerEnabled;
+					if (cfg.triggerEnabled) {
+						cfg.autoReplyEnabled = false;
+					}
 					cfg.save();
 				});
 		this.addRenderableWidget(this.triggerToggle);
@@ -97,6 +123,9 @@ public final class ChatSettingsScreen extends Screen {
 				() -> ChatResponder.getInstance().getConfig().scheduleEnabled, b -> {
 					ChatConfig cfg = ChatResponder.getInstance().getConfig();
 					cfg.scheduleEnabled = !cfg.scheduleEnabled;
+					if (cfg.scheduleEnabled) {
+						cfg.autoReplyEnabled = false;
+					}
 					cfg.save();
 				});
 		this.addRenderableWidget(this.scheduleToggle);
@@ -145,6 +174,22 @@ public final class ChatSettingsScreen extends Screen {
 		return box;
 	}
 
+	private void saveAsTemplate() {
+		String name = templateNameField.getValue().trim();
+		if (name.isEmpty()) {
+			Toast.show("\u00a7c请输入模板名称。");
+			return;
+		}
+		String prompt = systemPromptField.getValue();
+		if (prompt.isEmpty()) {
+			Toast.show("\u00a7c提示词内容为空。");
+			return;
+		}
+		PromptTemplateManager.save(name, prompt);
+		templateNameField.setValue("");
+		Toast.show("\u00a7a已保存模板: " + name);
+	}
+
 	private void save() {
 		ChatConfig c = ChatResponder.getInstance().getConfig();
 		String oldPrompt = c.systemPrompt;
@@ -163,6 +208,7 @@ public final class ChatSettingsScreen extends Screen {
 		} else {
 			ChatResponder.getInstance().refreshFromDisk();
 		}
+		Toast.show("\u00a7aAI Player 配置已保存并重载。");
 	}
 
 	private void importMainApi() {
@@ -193,24 +239,9 @@ public final class ChatSettingsScreen extends Screen {
 		}
 	}
 
-	private void cycleTemplate() {
-		ChatConfig c = ChatResponder.getInstance().getConfig();
-		String next = "聊天助手".equals(c.templateName) ? "聊天搭子" : "聊天助手";
-		c.templateName = next;
-		String prompt = "聊天搭子".equals(next) ? ChatConfig.TEMPLATE_BUDDY : ChatConfig.TEMPLATE_ASSISTANT;
-		c.systemPrompt = prompt;
-		systemPromptField.setValue(prompt);
-		c.save();
-		ChatResponder.getInstance().reloadConfig();
-	}
-
 	@Override
 	public void tick() {
 		super.tick();
-		if (this.templateButton != null) {
-			String name = ChatResponder.getInstance().getConfig().templateName;
-			this.templateButton.setMessage(Component.literal("提示词模板: " + name + "（点击切换）"));
-		}
 	}
 
 	@Override
@@ -230,7 +261,78 @@ public final class ChatSettingsScreen extends Screen {
 		g.drawString(this.font, Component.literal("自动回复会读取 logs/latest.log 捕获玩家消息并逐条回复"),
 				8, 22, 0xFF707070);
 		super.render(g, mouseX, mouseY, partialTick);
-		renderLogBox(g);
+		if (showingTemplates) {
+			renderTemplatePanel(g, mouseX, mouseY);
+		} else {
+			renderLogBox(g);
+		}
+		Toast.render(g);
+	}
+
+	private void renderTemplatePanel(GuiGraphics g, int mouseX, int mouseY) {
+		int w = this.width;
+		int h = this.height;
+		int top = h - 96;
+		int bottom = h - 6;
+		if (top >= bottom) {
+			return;
+		}
+		Ui.panel(g, 4, top, w - 4, bottom);
+
+		List<PromptTemplateManager.Template> list = PromptTemplateManager.getAll();
+		if (list.isEmpty()) {
+			g.drawString(this.font, Component.literal("\u25c9 提示词模板（暂无，上方输入名称保存当前提示词）"),
+					10, top + 3, Ui.TEXT_DIM);
+			return;
+		}
+
+		g.drawString(this.font, Component.literal("\u25c9 提示词模板（点击模板名填充，\u00a7cX\u00a7r 删除）"),
+				10, top + 3, Ui.TEXT_DIM);
+		int lx = 8;
+		int lw = w - 16;
+		int listTop = top + 14;
+		int bottomEdge = bottom - 2;
+		int rowH = 12;
+		int viewport = bottomEdge - listTop;
+		int maxScroll = Math.max(0, list.size() * rowH - viewport);
+		templateScroll = Math.max(0, Math.min(templateScroll, maxScroll));
+
+		g.enableScissor(6, listTop, w - 6, bottomEdge);
+		int yy = listTop - templateScroll;
+		for (int i = 0; i < list.size(); i++) {
+			if (yy + rowH >= listTop && yy <= bottomEdge) {
+				PromptTemplateManager.Template t = list.get(i);
+				boolean rowHover = mouseY >= yy && mouseY < yy + rowH;
+				if (rowHover) {
+					g.fill(lx, yy, lx + lw, yy + rowH, 0x33FFFFFF);
+				}
+
+				String preview = t.prompt;
+				if (preview.length() > 80) {
+					preview = preview.substring(0, 80) + "...";
+				}
+				String display = "\u00a7b" + t.name + "\u00a7r  " + preview;
+				List<FormattedCharSequence> parts = this.font.split(Component.literal(display), lw - 30);
+				if (!parts.isEmpty()) {
+					g.drawString(this.font, parts.get(0), lx + 2, yy + 1, 0xFFE9ECF1);
+				}
+
+				int delX = lx + lw - 20;
+				boolean delHover = rowHover && mouseX >= delX && mouseX < lx + lw;
+				g.drawString(this.font, Component.literal("\u00a7cX"),
+						delX, yy + 1, delHover ? 0xFFFF6B6B : 0xFF888888);
+			}
+			yy += rowH;
+		}
+		g.disableScissor();
+
+		if (maxScroll > 0) {
+			int barX = w - 12;
+			int barH = Math.max(14, viewport * viewport / Math.max(list.size() * rowH, viewport));
+			int barY = listTop + ((templateScroll * (viewport - barH)) / maxScroll);
+			g.fill(barX, listTop, barX + 4, bottomEdge, 0x33203040);
+			g.fill(barX, barY, barX + 4, barY + barH, 0xAA6FB8D8);
+		}
 	}
 
 	private void renderLogBox(GuiGraphics g) {
@@ -251,6 +353,13 @@ public final class ChatSettingsScreen extends Screen {
 		int viewport = bottom - listTop - 4;
 		int lineH = 10;
 		int maxScroll = Math.max(0, log.size() * lineH - viewport);
+
+		if (log.size() != lastLogCount) {
+			if (logStickToBottom) {
+				logScroll = maxScroll;
+			}
+			lastLogCount = log.size();
+		}
 		logScroll = Math.max(0, Math.min(logScroll, maxScroll));
 
 		g.enableScissor(6, listTop, w - 6, bottom - 2);
@@ -279,10 +388,65 @@ public final class ChatSettingsScreen extends Screen {
 	}
 
 	@Override
+	public boolean mouseClicked(MouseButtonEvent event, boolean isOutside) {
+		double mouseX = event.x();
+		double mouseY = event.y();
+		if (showingTemplates) {
+			int w = this.width;
+			int h = this.height;
+			int top = h - 96;
+			int bottom = h - 6;
+			int listTop = top + 14;
+			int bottomEdge = bottom - 2;
+			int rowH = 12;
+			int lx = 8;
+			int lw = w - 16;
+
+			if (mouseY >= listTop && mouseY < bottomEdge) {
+				int idx = (int) ((mouseY - listTop + templateScroll) / rowH);
+				List<PromptTemplateManager.Template> list = PromptTemplateManager.getAll();
+				if (idx >= 0 && idx < list.size()) {
+					int delX = lx + lw - 20;
+					if (mouseX >= delX && mouseX < lx + lw) {
+						PromptTemplateManager.delete(list.get(idx).name);
+						Toast.show("\u00a7e已删除模板: " + list.get(idx).name);
+						templateScroll = Math.max(0, templateScroll - rowH);
+						return true;
+					}
+					systemPromptField.setValue(list.get(idx).prompt);
+					Toast.show("\u00a7a已填充模板: " + list.get(idx).name);
+					return true;
+				}
+			}
+		}
+		return super.mouseClicked(event, isOutside);
+	}
+
+	@Override
 	public boolean mouseScrolled(double mouseX, double mouseY, double horizontalAmount, double verticalAmount) {
+		if (showingTemplates) {
+			int h = this.height;
+			int top = h - 96;
+			int bottom = h - 6;
+			int listTop = top + 14;
+			int bottomEdge = bottom - 2;
+			int viewport = bottomEdge - listTop;
+			List<PromptTemplateManager.Template> list = PromptTemplateManager.getAll();
+			int maxScroll = Math.max(0, list.size() * 12 - viewport);
+			templateScroll -= (int) Math.round(verticalAmount * 30);
+			templateScroll = Math.max(0, Math.min(templateScroll, maxScroll));
+			return true;
+		}
 		int top = this.height - 96;
 		if (mouseY >= top) {
+			logStickToBottom = false;
 			logScroll -= (int) Math.round(verticalAmount * 30);
+			List<String> log = ChatResponder.getInstance().getActivityLog();
+			int viewport = (this.height - 6) - (top + 14) - 4;
+			int maxScroll = Math.max(0, log.size() * 10 - viewport);
+			if (logScroll >= maxScroll) {
+				logStickToBottom = true;
+			}
 			return true;
 		}
 		return super.mouseScrolled(mouseX, mouseY, horizontalAmount, verticalAmount);

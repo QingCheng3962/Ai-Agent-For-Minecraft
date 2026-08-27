@@ -80,6 +80,7 @@ public final class McAiClient implements ClientModInitializer {
 				String s = "[mcai] 思考中...";
 				graphics.drawString(mc.font, s, w - mc.font.width(s) - 2, 2, 0xFFFFFFFF);
 			}
+			com.mcai.gui.Toast.render(graphics);
 		});
 	}
 

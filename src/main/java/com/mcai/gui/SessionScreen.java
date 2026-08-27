@@ -128,6 +128,7 @@ public final class SessionScreen extends Screen {
 		}
 
 		super.render(graphics, mouseX, mouseY, partialTick);
+		Toast.render(graphics);
 	}
 
 	private void drawMiniButton(GuiGraphics graphics, int x, int y, int w, String label, boolean hover) {

@@ -528,7 +528,7 @@ public final class McAiAgent {
 		try {
 			switch (name) {
 				case "get_state":
-					return ok(GameStateProvider.stateJson());
+					return new ActionResult(GameStateProvider.stateJson());
 				case "move": {
 					int ticks = Math.min(Math.max(spec.intArg("ticks", 10), 1), 100);
 					String dir = spec.str("direction", "forward");

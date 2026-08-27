@@ -52,9 +52,9 @@ public final class ChatConfig {
 	public boolean triggerEnabled = true;
 	public String triggerRegex = "(?i)^(ai|@ai)[\uff0c, ]";
 	public int triggerCooldownSeconds = 10;
-	public boolean autoReplyEnabled = true;
+	public boolean autoReplyEnabled = false;
 	public boolean useLogFile = true;
-	public boolean scheduleEnabled = true;
+	public boolean scheduleEnabled = false;
 	public int scheduleIntervalSeconds = 30;
 	public boolean restrictionEnabled = true;
 	public List<String> blockedRegexPatterns = new ArrayList<>();
@@ -71,7 +71,7 @@ public final class ChatConfig {
 	public boolean chatLogReload = true;
 	public boolean chatLogClearContext = true;
 	public boolean chatLogDebug = false;
-	public boolean imageGenerationEnabled = true;
+	public boolean imageGenerationEnabled = false;
 	public String imageProvider = "openai";
 	public String imageApiKey = "";
 	public String imageBaseUrl = "";
@@ -230,6 +230,10 @@ public final class ChatConfig {
 		}
 		if (imageBaseUrl.isEmpty()) {
 			imageBaseUrl = baseUrl;
+		}
+		if (autoReplyEnabled) {
+			triggerEnabled = false;
+			scheduleEnabled = false;
 		}
 	}
 

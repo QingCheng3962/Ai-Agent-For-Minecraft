@@ -195,6 +195,7 @@ public final class ConfigScreen extends Screen {
 		cfg.systemPrompt = systemPromptField.getValue();
 		ConfigManager.save();
 		McAiAgent.get().reloadClient();
+		Toast.show("\u00a7aAI 智能体配置已保存并重载。");
 	}
 
 	@Override
@@ -239,6 +240,7 @@ public final class ConfigScreen extends Screen {
 				8, 22, 0xFF8F8F8F);
 		super.render(graphics, mouseX, mouseY, partialTick);
 		renderModelPanel(graphics);
+		Toast.render(graphics);
 	}
 
 	@Override

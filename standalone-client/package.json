@@ -1,0 +1,18 @@
+{
+  "name": "cubex-bot-v2",
+  "version": "0.1.0",
+  "description": "Minimal Minecraft bot - ported from CubeX_Bot",
+  "main": "app.js",
+  "scripts": {
+    "start": "node 3rdparty_auth.js && node app.js",
+    "auth": "node 3rdparty_auth.js",
+    "bot": "node app.js"
+  },
+  "author": "Steve3184",
+  "license": "MIT",
+  "dependencies": {
+    "js-yaml": "^4.3.1",
+    "log4js": "^6.9.1",
+    "mineflayer": "^4.30.0"
+  }
+}

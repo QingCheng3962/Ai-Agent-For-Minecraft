@@ -84,6 +84,9 @@ public final class AiAgentScreen extends Screen {
 
 	@Override
 	public boolean mouseClicked(MouseButtonEvent event, boolean isOutside) {
+		if (this.input != null && !this.input.isMouseOver(event.x(), event.y())) {
+			this.input.setFocused(false);
+		}
 		return super.mouseClicked(event, isOutside);
 	}
 
@@ -177,6 +180,7 @@ public final class AiAgentScreen extends Screen {
 		}
 
 		super.render(g, mouseX, mouseY, partialTick);
+		Toast.render(g);
 	}
 
 	private static final class ChatRender {

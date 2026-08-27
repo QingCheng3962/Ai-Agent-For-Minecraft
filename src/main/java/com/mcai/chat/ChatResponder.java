@@ -75,6 +75,7 @@ public final class ChatResponder {
 	private volatile Pattern imageTriggerPattern;
 	private volatile List<Pattern> blockedPatterns = List.of();
 	private volatile boolean stripChatPrefix = true;
+	private volatile boolean stopped = false;
 	private final Deque<String> activityLog = new ArrayDeque<>();
 	private final Path logPath = FabricLoader.getInstance().getGameDir().resolve("logs/latest.log");
 	private long logFilePosition = 0;
@@ -93,6 +94,14 @@ public final class ChatResponder {
 
 	public static ChatResponder getInstance() {
 		return instance;
+	}
+
+	public void stopNow() {
+		stopped = true;
+		triggerReplying.set(false);
+		scheduleReplying.set(false);
+		imageGenerating.set(false);
+		scheduledRequestQueued.set(false);
 	}
 
 	public static void init() {
@@ -127,6 +136,7 @@ public final class ChatResponder {
 		triggerReplying.set(false);
 		scheduleReplying.set(false);
 		imageGenerating.set(false);
+		stopped = false;
 		if (newConfig.chatLogEnabled && newConfig.chatLogReload) {
 			sendLocalChatMessage("\u00a7a[mcai AI Player] \u00a7f配置已重载。");
 		}
@@ -220,6 +230,17 @@ public final class ChatResponder {
 			if (lastPlayerMessageTime.get() <= lastHandledUserMessageTime.get()) {
 				return;
 			}
+		long msgTime = lastPlayerMessageTime.get();
+		if (config.triggerEnabled && msgTime == lastHandledUserMessageTime.get()) {
+			return;
+		}
+		// Strict trigger gating: when trigger mode is on, the scheduled reply may only fire
+		// for a message that actually matched the trigger regex. Non-trigger messages are
+		// marked handled so the bot stays silent and never proactively speaks.
+		if (config.triggerEnabled && !matchesTrigger(msg)) {
+			lastHandledUserMessageTime.set(msgTime);
+			return;
+		}
 			if (scheduledRequestQueued.compareAndSet(false, true)) {
 				long userMessageTime = lastPlayerMessageTime.get();
 				lastHandledUserMessageTime.set(userMessageTime);
@@ -277,15 +298,6 @@ public final class ChatResponder {
 		}
 		if (playerName != null) {
 			text = stripPlayerPrefix(text, playerName);
-		} else if (fromGame) {
-			String stripped = stripPlayerPrefix(text, null);
-			if (stripped.equals(originalText)) {
-				if (config.debugLog) {
-					log("忽略非玩家系统消息: '" + originalText + "'");
-				}
-				return;
-			}
-			text = stripped;
 		}
 		String dedupeKey = (playerName == null ? "null" : playerName) + "|" + text;
 		long now = System.currentTimeMillis();
@@ -672,12 +684,18 @@ public final class ChatResponder {
 	}
 
 	private void handleAiReply(String reply, long userMessageTime) {
+		if (stopped || !config.enabled) {
+			return;
+		}
 		List<String> chunks = splitReply(reply);
 		if (chunks.isEmpty()) {
 			return;
 		}
 		int sent = 0;
 		for (String chunk : chunks) {
+			if (stopped || !config.enabled) {
+				break;
+			}
 			if (isBlocked(chunk)) {
 				log("跳过被拦截的 AI 消息: " + chunk);
 				if (config.chatLogEnabled && config.chatLogBlocked) {

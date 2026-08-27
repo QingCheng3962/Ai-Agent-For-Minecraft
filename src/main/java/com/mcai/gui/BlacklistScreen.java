@@ -71,6 +71,7 @@ public final class BlacklistScreen extends Screen {
 		c.save();
 		ChatResponder.getInstance().refreshFromDisk();
 		this.nameBox.setValue("");
+		Toast.show("\u00a7a已添加黑名单: " + name);
 	}
 
 	@Override
@@ -129,6 +130,7 @@ public final class BlacklistScreen extends Screen {
 		}
 
 		super.render(g, mouseX, mouseY, partialTick);
+		Toast.render(g);
 	}
 
 	private void drawMiniButton(GuiGraphics g, int x, int y, int w, String label, boolean hover, boolean red) {
@@ -159,10 +161,12 @@ public final class BlacklistScreen extends Screen {
 			b.enabled = !b.enabled;
 			c.save();
 			ChatResponder.getInstance().refreshFromDisk();
+			Toast.show("\u00a7e已" + (b.enabled ? "封禁" : "解禁") + ": " + b.name);
 		} else if (px >= x + w - 56 && px < x + w - 12) {
 			list.remove(row);
 			c.save();
 			ChatResponder.getInstance().refreshFromDisk();
+			Toast.show("\u00a7c已删除黑名单: " + b.name);
 		}
 		return true;
 	}

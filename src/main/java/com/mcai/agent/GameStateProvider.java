@@ -26,6 +26,7 @@ public final class GameStateProvider {
 		LocalPlayer p = mc.player;
 		JsonObject root = new JsonObject();
 		if (p == null) {
+			root.addProperty("ok", false);
 			root.addProperty("error", "Player not in a world");
 			return root.toString();
 		}
@@ -67,6 +68,7 @@ public final class GameStateProvider {
 		root.add("entitiesNearby", entitiesNearby(p));
 		root.add("blocksNearby", blocksNearby(level, p));
 		root.addProperty("timeOfDay", (level.getDayTime() % 24000L) < 12000L ? "day" : "night");
+		root.addProperty("ok", true);
 		return root.toString();
 	}
 

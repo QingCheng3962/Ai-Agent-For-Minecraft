@@ -1,5 +1,6 @@
 package com.mcai.agent;
 
+import com.google.gson.JsonObject;
 import com.mcai.config.ConfigManager;
 import net.fabricmc.loader.api.FabricLoader;
 
@@ -38,6 +39,82 @@ public final class ComputerTools {
 	}
 
 	public static String execute(String name, ActionSpec spec) {
+		String permError = permissionError(name);
+		if (permError != null) {
+			return permError;
+		}
+		String nodeResult = tryNode(name, spec);
+		if (nodeResult != null) {
+			return nodeResult;
+		}
+		return fallback(name, spec);
+	}
+
+	private static String permissionError(String name) {
+		if ("run_command".equals(name)) {
+			return ConfigManager.get().allowShell ? null
+					: "{\"ok\":false,\"error\":\"系统命令被禁用。请在设置中开启「允许命令」。\"}";
+		}
+		switch (name) {
+			case "write_file":
+			case "read_file":
+			case "edit_file":
+			case "list_dir":
+			case "grep":
+			case "find_files":
+				return ConfigManager.get().allowFileWrite ? null
+						: "{\"ok\":false,\"error\":\"文件操作被禁用。请在设置中开启「允许文件」。\"}";
+			default:
+				return null;
+		}
+	}
+
+	/** Route a tool through the fast Node.js bridge; returns null if unavailable. */
+	private static String tryNode(String name, ActionSpec spec) {
+		JsonObject params = new JsonObject();
+		long timeout = 15000;
+		switch (name) {
+			case "run_command":
+				params.addProperty("command", spec.str("command", ""));
+				params.addProperty("timeout", 30000);
+				timeout = 35000;
+				break;
+			case "write_file":
+				params.addProperty("path", spec.str("path", ""));
+				params.addProperty("content", spec.str("content", ""));
+				break;
+			case "read_file":
+				params.addProperty("path", spec.str("path", ""));
+				break;
+			case "edit_file":
+				params.addProperty("path", spec.str("path", ""));
+				params.addProperty("find", spec.str("find", ""));
+				params.addProperty("replace", spec.str("replace", ""));
+				params.addProperty("replaceAll", spec.boolArg("replaceAll", false));
+				break;
+			case "list_dir":
+				params.addProperty("path", spec.str("path", ""));
+				break;
+			case "grep":
+				params.addProperty("path", spec.str("path", ""));
+				params.addProperty("pattern", spec.str("pattern", ""));
+				break;
+			case "find_files":
+				params.addProperty("path", spec.str("path", ""));
+				params.addProperty("glob", spec.str("pattern", "**"));
+				break;
+			default:
+				return null;
+		}
+		JsonObject result = NodeBridge.request(name, params, timeout);
+		if (result == null) {
+			return null; // bridge unavailable -> fall back to Java implementation
+		}
+		result.remove("id");
+		return result.toString();
+	}
+
+	private static String fallback(String name, ActionSpec spec) {
 		switch (name) {
 			case "run_command":
 				return runCommand(spec.str("command", ""));

@@ -107,7 +107,9 @@ public final class OpenAIClient {
 		if (choices == null || choices.isEmpty()) {
 			return errorResult("Empty response: " + truncate(body, 300));
 		}
-		JsonObject message = choices.get(0).getAsJsonObject().getAsJsonObject("message");
+		JsonObject first = choices.get(0).getAsJsonObject();
+		JsonObject message = first.has("message") && !first.get("message").isJsonNull()
+				? first.getAsJsonObject("message") : new JsonObject();
 		ChatResult result = new ChatResult();
 		JsonElement content = message.get("content");
 		result.content = content == null || content.isJsonNull() ? "" : content.getAsString();

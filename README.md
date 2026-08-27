@@ -16,9 +16,21 @@ Minecraft 1.21.11 / Fabric 内置 AI 智能体模组，自带**独立窗口**。
 
 > ⚠️ **重要**：AI **操控玩家**的功能默认**关闭**。如需让 AI 移动角色/攻击/使用物品，请到设置界面手动开启「允许操控玩家」。
 
+## 包含内容
+
+本项目包含两个子项目：
+
+| 子项目 | 说明 | 位置 |
+| --- | --- | --- |
+| **Fabric 模组** | 游戏内 AI 智能体，按 K 键打开独立窗口 | `src/` |
+| **独立客户端（Python）** | 无需 Minecraft 客户端，可单独运行的 AI 玩家机器人 | `standalone-client/` |
+
+> **独立客户端**是一个基于 Python + tkinter GUI + Node.js (mineflayer) 的无客户端 AI 玩家，支持 LittleSkin/离线登录、AI 聊天回复、自动答题、自动进食、提示词模板管理等功能。详见 `standalone-client/` 目录。
+
 ## 功能
 
 - **独立窗口**：按 `K` 键打开游戏内 AI 窗口（滚动对话记录 + 输入框 + 发送/设置/清空/停止/任务模式/任务/会话按钮）
+- **独立 Python 客户端**（`standalone-client/`）：无客户端 AI 玩家机器人，带 tkinter GUI，支持 LittleSkin/离线登录、AI 聊天回复、自动答题、自动进食、提示词模板管理
 - **完全可自定义 API**：游戏内设置界面可配置 Base URL、API Key、Model、Temperature、Max Tokens、Max History、System Prompt；配置保存为 `.minecraft/config/mcai.json`
 - **多会话**：会话历史独立保存（`.minecraft/config/mcai_sessions/`），可新建 / 切换 / 删除
 - **任务系统**：每条指令生成一个任务，可在任务列表中暂停 / 继续 / 取消；任务模式自动按步骤工作直到完成
@@ -112,6 +124,11 @@ src/main/java/com/mcai/   模组源码（Mojang 命名）
   agent/                  状态读取 / 动作执行 / 智能体循环 / 工具定义
   gui/                    AI 独立窗口 + 设置 / 任务 / 会话界面
 src/main/resources/       fabric.mod.json / 语言文件 / 图标
+standalone-client/        独立 Python 客户端（无 Minecraft 客户端）
+  main.py                 入口
+  aafm_py/                核心模块（config / llm / ai_player / controller / gui / bot_engine）
+  bot_engine.js           Node.js (mineflayer) 机器人引擎
+  3rdparty_auth.js        LittleSkin OAuth 登录
 tools/                    映射合并与图标生成工具
 test/smoke/               LLM 客户端离线冒烟测试
 build.ps1                 一键手动构建脚本
@@ -144,11 +161,14 @@ build.ps1                 一键手动构建脚本
 
 An in-game AI agent mod for Minecraft 1.21.11 / Fabric with a **standalone window**. Connect the AI to any **OpenAI-compatible** API (OpenAI, DeepSeek, Ollama, vLLM, SiliconFlow, etc.), chat with it in-game, and let it read your position, health, inventory, and surroundings.
 
+> This repo also includes a **standalone Python client** (`standalone-client/`) — a headless AI player bot with tkinter GUI that runs without a Minecraft client.
+
 > ⚠️ **Note**: The AI's ability to **control the player** is **disabled by default**. To let the AI move your character / attack / use items, manually enable "Allow Player Control" in the Settings screen.
 
 ## Features
 
 - **Standalone window**: press `K` to open the in-game AI window (scrollable chat + input box + Send / Settings / Clear / Stop / Task Mode / Tasks / Sessions buttons)
+- **Standalone Python client** (`standalone-client/`): a headless AI player bot with tkinter GUI, runs without Minecraft client, supports LittleSkin/offline auth, AI chat, quiz, auto-eat, prompt template management
 - **Fully customizable API**: configure Base URL, API Key, Model, Temperature, Max Tokens, Max History, System Prompt in-game; saved to `.minecraft/config/mcai.json`
 - **Multiple sessions**: independent chat histories (`.minecraft/config/mcai_sessions/`), create / switch / delete sessions
 - **Task system**: every command becomes a task that can be paused / resumed / cancelled; task mode works autonomously step by step until done
@@ -242,6 +262,11 @@ src/main/java/com/mcai/   mod sources (Mojang names)
   agent/                  state reading / action execution / agent loop / tool definitions
   gui/                    AI window + settings / tasks / sessions screens
 src/main/resources/       fabric.mod.json / language files / icon
+standalone-client/        standalone Python client (no Minecraft client needed)
+  main.py                 entry point
+  aafm_py/                core modules (config / llm / ai_player / controller / gui / bot_engine)
+  bot_engine.js           Node.js (mineflayer) bot engine
+  3rdparty_auth.js        LittleSkin OAuth login
 tools/                    mapping-merge and icon generator
 test/smoke/               offline LLM client smoke test
 build.ps1                 one-click manual build script
@@ -263,3 +288,7 @@ build.ps1                 one-click manual build script
 4. **Network & costs**: this mod sends your conversation, game state (position/health/inventory), and file contents to the configured API endpoint. Mind your privacy; you are responsible for any API costs.
 5. **Unofficial**: this project is not affiliated with or endorsed by Mojang or Microsoft. It is an unofficial work for learning and research purposes.
 6. **As-is**: this project is provided "as is" without any express or implied warranty. The author is not liable for any direct or indirect loss caused by using this mod.
+
+## 致谢 / Acknowledgements
+
+感谢 Be_kong、Steve3148 提供的源码支持。

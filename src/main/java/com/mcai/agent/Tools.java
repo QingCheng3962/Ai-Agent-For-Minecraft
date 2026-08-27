@@ -109,11 +109,13 @@ public final class Tools {
 	}
 
 	private static ToolSpec editFileTool() {
-		return new ToolSpec("edit_file", "Precisely edit a file by replacing the first occurrence of a text "
-				+ "snippet with new text. Read the file first.",
+		return new ToolSpec("edit_file", "Precisely edit a file by replacing a text snippet. By default only the "
+				+ "first occurrence is replaced; set replaceAll=true to replace every occurrence. Read the file "
+				+ "first.",
 				obj(e("path", str(), "File path"),
 						e("find", str(), "The exact existing text to replace"),
-						e("replace", str(), "The new text to put in its place")));
+						e("replace", str(), "The new text to put in its place"),
+						e("replaceAll", bool(), "Optional: true to replace every occurrence instead of just the first")));
 	}
 
 	private static ToolSpec listDirTool() {

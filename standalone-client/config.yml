@@ -1,0 +1,30 @@
+# CubeX Bot v2 Configuration
+
+# Server connection
+server:
+  host: "frp-day.com"
+  port: 33726
+  version: "1.20"
+  viewDistance: "tiny"
+  brand: "SteveBot"
+
+# LLM API for quiz answering
+llm:
+  endpoint: "https://api.furry.vg/v1/chat/completions"
+  model: "THUDM/GLM-4-9B-0414"
+  apiKey: "sk-mGss7mKNE6bYYTjVSPIDecj9fGMqWlro4JtcWWvv9yRFB0HY"
+  # Optional: custom headers
+  headers: {}
+
+# Bot owner (PM with # prefix triggers echo)
+owner: "Steve3184"
+
+# Auto eat
+autoeat:
+  enabled: true
+
+# Quiz auto-answering
+quiz:
+  enabled: true
+  minDelay: 3000        # Minimum delay before sending answer (ms)
+  questionBank: "questionBank.json"  # Question bank file path

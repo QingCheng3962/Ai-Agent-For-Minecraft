@@ -1,0 +1,42 @@
+{
+  "server": {
+    "host": "play.cubexmc.org",
+    "port": 25565,
+    "version": "1.20",
+    "brand": "aafm-python",
+    "viewDistance": "tiny"
+  },
+  "auth": {
+    "type": "littleskin",
+    "username": "DiaoHelper",
+    "uuid": "95930c58-d7de-4ce2-bc80-abeb789115b4",
+    "session": {
+      "accessToken": "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6Ijlvc3R5V1VzLXBPempUdmNkQXB2Sjl5Qk1NMF9DNUlkYnlPc3RsUmlaWE0ifQ.eyJqdGkiOiJjMmM5NWEzNS1jZDMzLTRjZjktODJmMC0xMzFiZmNmYmQ3MjIiLCJzdWIiOiIxNjg1MDg1IiwiYXVkIjoiODY1IiwibmJmIjoxNzg3NzkzOTg4LCJleHAiOjE3ODgwNTMxODgsInNjb3BlcyI6WyJZZ2dkcmFzaWwuUGxheWVyUHJvZmlsZXMuU2VsZWN0IiwiWWdnZHJhc2lsLlNlcnZlci5Kb2luIl0sInNlbGVjdGVkUHJvZmlsZSI6Ijk1OTMwYzU4ZDdkZTRjZTJiYzgwYWJlYjc4OTExNWI0IiwiaWF0IjoxNzg3NzkzOTg4LCJpc3MiOiJZZ2dkcmFzaWwgQ29ubmVjdCJ9.n90Vu9tDvArJZXxHqviX1tyxpJT5entjBBLRswdnTwybzrE1EV83vxtPCpBigMCt9y55yJNt9VIND4RmZfBGVi5ZdDhtNdi_g86ME99_JU09lcNWkBGpFROX2gvsJkBkKL-vT3Q21rlZVKpt3z1twHBmqEC6nrRac_GHpKhrvTed6nieysxvzJcZcCM2Dh7hhxtL5ZHYgJWDbKJN95coP3bYv0DTaR_t5qI284woQErQ9qUVipOxV-B5cICoPKWJDay7vdkyOnXuoNZU8921pJB1Wk-l_eXtomh-YvWuY4uKNOS-46uyW0rGYwYVXX-3NE-VSzCVfa_UtzomYo5YgUwlQzPuwrpSBHtJ3XZIGNPaMyGwqXO_irWFyxFhaArk285JTesYepKU52I8vNwDvvaf9OQ9Fcy1g-ZpHdImRisZHv5Y5fLZpGq7gkShG8m2GWNSJxR4qWgSxmz3RmLt7Nt9VXh-A7sJl5UEyRKqVwkAKoEGdpd5f8_MQ2o1vGlT6Fy3Meu941GfTQ9bmjXinDu_cmqL7LPhBoSmfnwQwLxuWntPB3KKnmnXRfWnxjpt-Ifwxl1JC55VDKEHR2Qkxr2C2E2EWVJh52DgMqImjZpjrAAV71M3SACY30rqDXJSW2xN4fk-R8kSD9nVy8bS0q2TAfrPprRnklC3WdwwFTo",
+      "clientToken": "574ed650-9225-43a9-8c07-b34a31808d83",
+      "availableProfiles": [
+        {
+          "id": "95930c58d7de4ce2bc80abeb789115b4",
+          "name": "DiaoHelper"
+        }
+      ],
+      "selectedProfile": {
+        "id": "95930c58d7de4ce2bc80abeb789115b4",
+        "name": "DiaoHelper"
+      }
+    }
+  },
+  "llm": {
+    "endpoint": "https://apihub.agnes-ai.com/v1",
+    "model": "gpt-4o-mini",
+    "apiKey": "sk-1d7D4buVgExA2o9pUkfkEMRs04ek5WGN2JTRMXT8YQoUiQSb",
+    "headers": {}
+  },
+  "autoeat": {
+    "enabled": true
+  },
+  "quiz": {
+    "enabled": true,
+    "minDelay": 3000,
+    "questionBank": "questionBank.json"
+  }
+}

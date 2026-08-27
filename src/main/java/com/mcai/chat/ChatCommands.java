@@ -18,14 +18,17 @@ public final class ChatCommands {
 									feedback("AI Player 配置已重载。");
 									return 1;
 								}))
-								.then(ClientCommandManager.literal("toggle").executes(ctx -> {
-									ChatConfig cfg = ChatResponder.getInstance().getConfig();
-									cfg.enabled = !cfg.enabled;
-									cfg.save();
-									ChatResponder.getInstance().reloadConfig();
-									feedback("AI Player " + (cfg.enabled ? "已启用" : "已禁用"));
-									return 1;
-								}))
+							.then(ClientCommandManager.literal("toggle").executes(ctx -> {
+								ChatConfig cfg = ChatResponder.getInstance().getConfig();
+								cfg.enabled = !cfg.enabled;
+								cfg.save();
+								if (!cfg.enabled) {
+									ChatResponder.getInstance().stopNow();
+								}
+								ChatResponder.getInstance().reloadConfig();
+								feedback("AI Player " + (cfg.enabled ? "已启用" : "已禁用"));
+								return 1;
+							}))
 								.then(ClientCommandManager.literal("status").executes(ctx -> {
 									ChatConfig c = ChatResponder.getInstance().getConfig();
 									feedback("AI Player | enabled=" + c.enabled + ", provider=" + c.provider

@@ -34,6 +34,12 @@ public final class AiPlayerScreen extends Screen {
 					ChatConfig c = ChatResponder.getInstance().getConfig();
 					c.enabled = !c.enabled;
 					c.save();
+					if (!c.enabled) {
+						ChatResponder.getInstance().stopNow();
+						Toast.show("\u00a7cAI Player 已停止。");
+					} else {
+						Toast.show("\u00a7aAI Player 已启用。");
+					}
 				});
 		this.addRenderableWidget(this.masterToggle);
 
@@ -41,7 +47,10 @@ public final class AiPlayerScreen extends Screen {
 				b -> this.minecraft.setScreen(new ChatSettingsScreen()))
 				.bounds(cx - 90, 82, 180, 20).build());
 		this.addRenderableWidget(Button.builder(Component.literal("重开上下文"),
-				b -> ChatResponder.getInstance().reloadConfig())
+				b -> {
+					ChatResponder.getInstance().reloadConfig();
+					Toast.show("\u00a7a上下文已重开。");
+				})
 				.bounds(cx - 90, 106, 180, 20).build());
 		this.addRenderableWidget(Button.builder(Component.literal("黑名单"),
 				b -> this.minecraft.setScreen(new BlacklistScreen()))
@@ -92,5 +101,6 @@ public final class AiPlayerScreen extends Screen {
 		}
 
 		super.render(g, mouseX, mouseY, partialTick);
+		Toast.render(g);
 	}
 }
