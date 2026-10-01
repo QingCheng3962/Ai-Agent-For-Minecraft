@@ -1,3 +1,5 @@
+哦不，这么说吧，这个项目我已经失去开发的动力了，你们自己拿源码去玩吧，这个项目我觉得不是我的得意之作，于是我造出了 Ai Helper In Minecraft
+
 # AI Agent for Minecraft
 
 > Minecraft 1.21.11 / Fabric AI 智能体模组 | **中文** · [English](#en)
